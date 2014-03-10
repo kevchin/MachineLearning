@@ -141,6 +141,8 @@ AppPackages/
 
 # Others
 #sql/
+.RData
+.RHistory
 *.Cache
 ClientBin/
 [Ss]tyle[Cc]op.*
