@@ -281,3 +281,38 @@ corrgram(shortNameOffender, order=NULL, lower.panel=panel.shade,
          upper.panel=NULL, text.panel=panel.txt,
          main="Zero DRIPS Offender Correlation")
         
+
+# Find out worse Offenders during Zero DRIPS
+gt10Count <- apply(shortNameOffender, MARGIN=2, function(x) { sum(x >10)})
+df2 <- data.fram(gt10Count)
+df3 <- data.frame(rownames(df2), df2$gt10Count)
+colnames(df3) <- c("Offender", "Count")
+
+labelText <- paste("Zero Drips: Offenders > 10% Busy")
+ggplot(df3, aes(x=Offender, y=Count)) + geom_bar(stat = "bin")+
+  annotate("text", label=labelText, colour = "red", x=4, y=1500)
+  
+write.table(shortNameOffender, file="zeroDripsClassify.csv", sep=",", row.names=FALSE)
+
+#### 
+###--------------
+### SVM
+library(e1071)
+
+rightAnswers <- read.csv("zeroDripsClassifyRightAnswers.csv")
+testSet <- shortNameOffender[-(1:nrow(rightAnswers)),]
+svm.model <- svm(Classify ~., data=rightAnswers, cost=100, gamma=1)
+svm.pred <- predict(svm.model, rightAnswers[,-1])
+table(pred=svm.pred, true=rightAnswers[,1])
+
+svm.pred <- predict(svm.model, testSet)
+
+df2 <- data.frame(summary(svm.pred))
+colnames(df2) <- c("Count")
+df3 <- data.frame(rownames(df2), df2$Count)
+colnames(df3) <- c("Offender", "Count")
+labelText <- paste("SVM Model of Root Cause Offenders\nZero DRIPS Sessions")
+ggplot(df3, aes(x=Offender, y=Count)) + geom_bar(stat = "bin")+
+  annotate("text", label=labelText, colour = "red", x=4, y=1000)
+
+
