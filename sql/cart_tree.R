@@ -1,3 +1,7 @@
+library(ggplot2)
+# hex colors
+library(hexbin)
+
 #raw <- read.csv("cart_tree_input.csv")
 
 raw <- read.csv("d0_100.csv")
@@ -9,19 +13,119 @@ dripsDrain.df <- dripsDrain.df[L,]
 
 attach(dripsDrain.df)
 hist(DripsPercentage)
+L <- (dripsDrain.df$DripsPercentage > 90) 
+hist(dripsDrain.df[L,]$DripsPercentage, xlab="DRIPS Rates (%)", main="DRIPS Rates > 90%")
+
 hist(EnergyChangeRate)
-plot(DripsPercentage, EnergyChangeRate)
+L <- (dripsDrain.df$EnergyChangeRate < 1000) 
+hist(dripsDrain.df[L,]$EnergyChangeRate, xlab="Drain Rates (mwh)", main="Drain Rates < 1Watt")
+plot(DripsPercentage, EnergyChangeRate, main=paste("CS Sessions (n =", nrow(dripsDrain.df), ")", sep=''))
 
-# Use semi-transparent dots
-library(ggplot2)
-#sp <- ggplot(dripsDrain.df, aes(x=DripsPercentage, y=EnergyChangeRate))
-#sp + geom_point(alpha=.01)
+# R sample to take smaller dataset
+#mySample <- dripsDrain.df[sample(1:nrow(dripsDrain.df), 500, replace=FALSE),]
 
-# hex colors
-library(hexbin)
-sp <- ggplot(dripsDrain.df, aes(x=DripsPercentage, y=EnergyChangeRate))
+# remove the top and bottom 10% DRIPS
+L <- (dripsDrain.df$DripsPercentage > 4) & (dripsDrain.df$DripsPercentage < 95)  
+mySample <- dripsDrain.df[L,]
+
+# K-means
+
+#library(NbClust)
+#set.seed(1234)
+#nc <- NbClust(mySample, min.nc=2, max.nc=15, method="kmeans")
+#table(nc$Best.n[1,])
+
+#barplot(table(nc$Best.n[1,]), 
+#          xlab="Numer of Clusters", ylab="Number of Criteria",
+#          main="Number of Clusters Chosen by 26 Criteria")
+
+labelText <- paste("Heat Map of Density: DRIPS[5%-95%]")
+
+sp <- ggplot(mySample, aes(x=DripsPercentage, y=EnergyChangeRate))
 sp + stat_binhex() +
-  scale_fill_gradient(low="lightblue", high="red", limits=c(0,5000))
+  scale_fill_gradient(low="lightblue", high="red", limits=c(0,5000))+
+  annotate("text", label=labelText, colour = "red", x=50.5, y=4000)
+
+
+
+kSize=1
+cl <- kmeans(mySample, kSize)
+#myTitle <- paste("K-Means Clustering k=",kSize,sep='')
+#plot(mySample, col = cl$cluster, main=myTitle)
+
+labelText <- paste("K=1 Mean = (", round(cl$centers[1,1],1), ", ", round(cl$centers[1,2],1), ")", sep='')
+sp <- ggplot(mySample, aes(x=DripsPercentage, y=EnergyChangeRate, 
+      #colour = c("darkred", "orange", "yellow", "black"))) + 
+      colour = cl$cluster))+
+#  scale_colour_manual(values=c("red", "blue"))+
+  scale_fill_hue() +
+  geom_point(size=3)+
+  annotate("text", label=labelText, colour = "red", x=50.5, y=4000)+
+  annotate("text", label="X", colour = "red", 
+           x=cl$centers[1,1], 
+           y=cl$centers[1,2])
+sp
+
+labelText <- paste("Heat Map w/ K Means (k=1): DRIPS[5%-95%] \nmean=(85,256)")
+sp <- ggplot(mySample, aes(x=DripsPercentage, y=EnergyChangeRate))
+sp + stat_binhex() +
+  scale_fill_gradient(low="lightblue", high="red", limits=c(0,5000))+
+  annotate("text", label=labelText, colour = "red", x=50.5, y=4000)+
+  annotate("text", label="X", colour = "black", 
+           x=cl$centers[1,1], 
+           y=cl$centers[1,2])
+
+
+
+wssplot <- function(data, nc=15, seed=1234){
+  wss <- (nrow(data)-1)*sum(apply(data,2,var))
+  for (i in 2:nc){
+    set.seed(seed)
+    wss[i] <- sum(kmeans(data, centers=i)$withinss)}
+  plot(1:nc, wss, type="b", xlab="Number of Clusters",
+       ylab="Within groups sum of squares")}
+
+wssplot(mySample)
+
+#  annotate("segment", x=10,xend=10,y=20,yend=0,arrow=arrow(), color="red") +
+
+kSize=4
+cl <- kmeans(mySample, kSize)
+labelText <- paste("K=4 Mean", "(n=", nrow(mySample), ")", sep='')
+
+sp <- ggplot(mySample, aes(x=DripsPercentage, y=EnergyChangeRate, 
+                           #colour = c("darkred", "orange", "yellow", "black"))) + 
+                           colour = cl$cluster))+
+  #  scale_colour_manual(values=c("red", "blue"))+
+  scale_fill_hue() +
+  geom_point(size=3)+
+  annotate("text", label=labelText, colour = "red", x=50.5, y=4000)+
+  annotate("text", label=paste("X", " ", "(n = ", cl$size[1],")"), 
+           colour = "red", 
+           x=cl$centers[1,1], 
+           y=cl$centers[1,2])+
+  annotate("text", label=paste("X", " ", "(n = ", cl$size[2],")"), 
+           colour = "red", 
+           x=cl$centers[2,1], 
+         y=cl$centers[2,2])+
+  annotate("text", label=paste("X", " ", "(n = ", cl$size[3],")"), 
+           colour = "red", 
+           x=cl$centers[3,1], 
+         y=cl$centers[3,2])+
+annotate("text", label=paste("X", " ", "(n = ", cl$size[4],")"), 
+         colour = "red", 
+         x=cl$centers[4,1], 
+         y=cl$centers[4,2])
+
+sp
+
+#
+# Tells me the optimal number of clusters given this dataset
+#
+cl$size
+cl$centers
+
+
 
 # remove the 0 drips entries
 L <- (dripsDrain.df$DripsPercentage > 0) 
@@ -53,7 +157,9 @@ predictvals <- function(model, xvar, yvar, xrange=NULL, samples=100, ...) {
 
 interceptText <- summary(model)$coefficients[1,1]
 coeffText <- summary(model)$coefficients[2,1]
-labelText <- paste("y= ",round(interceptText,digits=1), " + (", round(coeffText,digits=1), " * Drips)", sep='')
+labelText <- paste("y= ",
+                   round(interceptText,digits=1), 
+                   " + (", round(coeffText,digits=1), " * Drips%)", sep='')
 
 pred <- predictvals(model, "DripsPercentage", "EnergyChangeRate")
   
@@ -83,7 +189,10 @@ offender <- offender[,-c(1)]
 saveLongNames <- colnames(offender)
 
 offenderNames <- colnames(offender)[-1]
-colnames(offender) <- c(saveLongNames[1],1:(length(saveLongNames)-1))
+colnames(offender) <- sub(".*\\._SB.", "", saveLongNames, perl=TRUE)
+colnames(offender) <- sub("Marvell.AVASTAR.Wireless.", "", colnames(offender), perl=TRUE)
+
+#colnames(offender) <- c(saveLongNames[1],1:(length(saveLongNames)-1))
 
 # examine the offender data
 str(offender)
@@ -92,7 +201,7 @@ str(offender)
 #pairs.panels(offender[c("15", "2")])
 
 # the distribution of EnergyChangeRate
-hist(offender$EnergyChangeRate)
+hist(offender$EnergyChangeRate,xlab="Drain Rates (mw)", main=paste("Zero DRIPS ", "(n=", nrow(offender),")", sep=''))
 
 # summary statistics of the offender data
 summary(offender)
@@ -114,7 +223,10 @@ summary(m.rpart)
 library(rpart.plot)
 
 # this Type=2 is pretty good
-rpart.plot(m.rpart, digits = 4, fallen.leaves = TRUE, type = 2, extra = 1)
+rpart.plot(m.rpart, digits = 4, fallen.leaves = TRUE, 
+           main="Zero DRIPS: Drain Rate v. Offender Active %",
+           type = 2, extra = 1)
+
 #rpart.plot(m.rpart, digits = 4, fallen.leaves = TRUE, type = 3, extra = 1)
 #rpart.plot(m.rpart, digits = 4, fallen.leaves = TRUE, type = 4, extra = 1)
 
@@ -139,4 +251,33 @@ MAE <- function(actual, predicted) {
 MAE(p.rpart, offender_test$EnergyChangeRate)
 
 # mean absolute error between actual values and mean value
-mean(offender_train$EnergyChangeRate) # result = 678.0393
+mean(offender_train$EnergyChangeRate) # result = 782.9983
+
+
+###-----------------------
+### Correlation
+###-----------------------
+
+
+shortNameOffender <- offender[-1]
+L <- colSums(shortNameOffender) > 1000
+shortNameOffender <- shortNameOffender[,L]
+colnames(shortNameOffender) <- colnames(saveLongNames[,L])
+
+#apply(shortNameOffender, 2, FUN=function(x) length(which(x > 50)))
+
+#shortNames <- sub(".*(.....)$","\\1",grep("_SB",saveLongNames,value=TRUE))
+
+#colnames(shortNameOffender) <- sub(".*(.....)$","\\1",grep("_SB",saveLongNames,value=TRUE))
+
+colnames(shortNameOffender) <- sub(".*\\._SB.", "", colnames(shortNameOffender), perl=TRUE)
+colnames(shortNameOffender) <- sub("Marvell.AVASTAR.Wireless.", "", colnames(shortNameOffender), perl=TRUE)
+colnames(shortNameOffender) <- sub("(.....).*", "\\1", colnames(shortNameOffender), perl=TRUE)
+
+
+# Corrgram based on offenders
+library(corrgram)
+corrgram(shortNameOffender, order=NULL, lower.panel=panel.shade,
+         upper.panel=NULL, text.panel=panel.txt,
+         main="Zero DRIPS Offender Correlation")
+        
