@@ -3,18 +3,28 @@ raw <- read.csv("drips_regression.csv")
 L <- (raw$EnergyChangeRate > 50)  & (raw$EnergyChangeRate < 1000)
 filter.df <- raw[L,]
 
+L <- (filter.df$DripsPercentage > 0)
+filter.df <- filter.df[L,]
 
-fit <- lm(EnergyChangeRate ~ DripsPercentage, data=filter.df)
-summary(fit)
 
-#with (raw)
-plot(filter.df$DripsPercentage, filter.df$EnergyChangeRate)
+dripsRange <- filter.df$DripsPercentage
+hist(dripsRange, right=FALSE, main="DRIPS Distribution")
 
 changeRate = filter.df$EnergyChangeRate
-hist(changeRate, right=FALSE)
+hist(changeRate, right=FALSE, main="Change Distribution")
 
-dripsRate = filter.df$DripsPercentage
-hist(dripsRate, right=FALSE)
+durationRange = filter.df$Duration
+hist(durationRange, right=FALSE, main="Duration Range")
+
+attach(filter.df)
+fit <- lm(EnergyChangeRate ~ DripsPercentage, data=filter.df)
+summary(fit)
+plot(DripsPercentage, EnergyChangeRate)
+abline(fit)
+
+
+#plot(EnergyChangeRate, Duration)
+
 
 # Other useful functions 
 coefficients(fit) # model coefficients
