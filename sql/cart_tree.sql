@@ -1,4 +1,4 @@
-SELECT TOP 100000  
+SELECT TOP 50000  
 	cs.OSBuildNumber, 
 	'1' as identityField,
 	cs.SystemProductName as ProductName,
@@ -40,8 +40,8 @@ and
   and offender.TopOffenderType <> 5
   and offender.TopOffenderLevel < 2
   --and offender.TopOffenderType <> 1
-  --and (ss.DripsPercentage < 1
-  --or ss.HWDripsPercentage = 0)
+  and (ss.DripsPercentage < 1
+  or ss.HWDripsPercentage = 0)
   and offender.TopOffenderActiveTimePercentage > 1
   and (
 [SystemProductName] = 'Surface with Windows RT'
