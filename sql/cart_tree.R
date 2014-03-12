@@ -336,9 +336,53 @@ contour3d(newdat.dv, level=0, x=newdat.list$X1, y=newdat.list$X2, z=newdat.list$
 ### SVM
 library(e1071)
 
+dataset.df <- read.csv("zeroDripsClassify_HandTuned.csv")
+index <- 1:nrow(dataset.df)
+
+# testindex is 1/3 of the sample
+testindex <- sample(index, trunc(length(index)/3)) 
+
+# get rid of some not needed columns
+#
+dataColumns <-  !grepl("Count", colnames(dataset.df))
+offenders.df <- dataset.df[,dataColumns]
+
+# Get a test and training set
+testset <- offenders.df[testindex,]
+trainset <- offenders.df[-testindex,]
+
+# Run SVM naively (without training on cost or gamma)
+svm.model <- svm(Classify ~., data=trainset, cost=10, gamma=1, cross=10)
+
+#Call:
+#  svm(formula = Classify ~ ., data = trainset, cost = 10, gamma = 1, cross = 10)
+
+
+#Parameters:
+#  SVM-Type:  C-classification 
+#SVM-Kernel:  radial 
+#cost:  10 
+#gamma:  1 
+
+#Number of Support Vectors:  580
+
+svm.pred <- predict(svm.model, testset[,-1])
+
+tab <- table(pred=svm.pred, true=testset[,1])
+matchDiagPercentage <- classAgreement(tab)$diag
+
+# Higher is better
+# cost =10, gamma = 1, result = 93%
+matchDiagPercentage
+
+#---------------------------------
+
+
+
+
 rightAnswers <- read.csv("zeroDripsClassifyRightAnswers.csv")
 testSet <- shortNameOffender[-(1:nrow(rightAnswers)),]
-svm.model <- svm(Classify ~., data=rightAnswers, cost=100, gamma=1)
+svm.model <- svm(Classify ~., data=rightAnswers, cost=10, gamma=1)
 svm.pred <- predict(svm.model, rightAnswers[,-1])
 table(pred=svm.pred, true=rightAnswers[,1])
 
