@@ -352,4 +352,11 @@ labelText <- paste("SVM Model of Root Cause Offenders\nZero DRIPS Sessions")
 ggplot(df3, aes(x=Offender, y=Count)) + geom_bar(stat = "bin")+
   annotate("text", label=labelText, colour = "red", x=4, y=1000)
 
-
+df4 <- data.frame(svm.pred)
+colnames(df4) <- c("Root")
+df4 <- data.frame(rownames(df4), df4$Root)
+colnames(df4) <- c("rowIndex", "Root")
+rIndex <- c(nrow(rightAnswers)+1:(nrow(df4)))
+df4$rowIndex <- rIndex
+predictions.output <- data.frame(df4$Root,testSet )
+write.table(predictions.output, file="zeroDripsPredictClassify.csv", sep=",", row.names=FALSE)
