@@ -8,8 +8,35 @@ raw <- read.csv("d0_100.csv")
 raw[is.na(raw)] <- 0
 
 dripsDrain.df <- raw[,c('DripsPercentage', 'EnergyChangeRate', 'Duration')]
-L <- (dripsDrain.df$EnergyChangeRate > 0) 
+L <- (dripsDrain.df$EnergyChangeRate > 0)
+
 dripsDrain.df <- dripsDrain.df[L,]
+dripsDrain.df['DripsCategory'] <- '0% DRIPS'
+L <- (dripsDrain.df$DripsPercentage > 0) & (dripsDrain.df$DripsPercentage < 95)
+dripsDrain.df[L,]$DripsCategory <- '1-94% DRIPS'
+L <- (dripsDrain.df$DripsPercentage > 94) 
+dripsDrain.df[L,]$DripsCategory <- '95%+ DRIPS'
+
+
+
+#library(plyr)
+#cdf <- ddply(dripsDrain.df[L,], "Category", summarise, EnergyChangeRate.mean=mean(EnergyChangeRate))
+
+# Density plots
+#ggplot(dripsDrain.df[L,], aes(x=EnergyChangeRate, colour=Category, fill=Category)) +
+#  geom_density(alpha=.1) +
+#  geom_vline(data=cdf, aes(xintercept=EnergyChangeRate.mean,  colour="red"),
+#             linetype="dashed", size=1)
+
+L <- (dripsDrain.df$EnergyChangeRate < 1000 )
+# Density plots
+labelText <- paste("Avg Drain Rates by DRIPS grouping\n (< 1 Watt)")
+ggplot(dripsDrain.df[L,], aes(x=EnergyChangeRate, colour=DripsCategory, fill=DripsCategory)) +
+  geom_density(alpha=.1) +
+  annotate("text", label=labelText, colour = "black", x=500, y=0.006)
+
+#ggplot(dripsDrain.df[L,], aes(x=EnergyChangeRate, fill=Category)) +
+#  geom_histogram(binwidth=.5, alpha=.5, position="identity")
 
 attach(dripsDrain.df)
 hist(DripsPercentage)
@@ -22,14 +49,24 @@ percentZero <- (nrow(dripsDrain.df[L,]) * 1.0) / allRow
 mw0 <- mean(dripsDrain.df[L,]$EnergyChangeRate)
 duration0 <- sum(dripsDrain.df[L,]$Duration)
 avg0Duration <- (duration0 *1.0) / (nrow(dripsDrain.df[L,]))
+L <- (dripsDrain.df$EnergyChangeRate < 1000 ) & L
+ggplot(dripsDrain.df[L,], aes(x=EnergyChangeRate)) + 
+  geom_histogram(binwidth=.5, colour="grey", fill="white") +
+  geom_density(alpha=.2, fill="#FF6666")
+
 
 L <- (dripsDrain.df$DripsPercentage > 0) &(dripsDrain.df$DripsPercentage < 95)
 percentMiddle <- (nrow(dripsDrain.df[L,]) *1.0 ) / allRow
 mwMid <- mean(dripsDrain.df[L,]$EnergyChangeRate)
 duration1 <- sum(dripsDrain.df[L,]$Duration)
 avg1Duration <- (duration1 *1.0) / (nrow(dripsDrain.df[L,]))
-                                                                    
-                                  
+
+L <- (dripsDrain.df$EnergyChangeRate < 1000 ) & L
+ggplot(dripsDrain.df[L,], aes(x=EnergyChangeRate)) + 
+  geom_histogram(aes(y=..density..),binwidth=.5, colour="grey", fill="white") +
+  geom_density(alpha=.2, fill="#FF6666")
+
+
 L <- (dripsDrain.df$DripsPercentage > 94) 
 mw95 <- mean(dripsDrain.df[L,]$EnergyChangeRate)
 percent95up <- (nrow(dripsDrain.df[L,]) *1.0) / allRow
@@ -68,7 +105,6 @@ ggplot(dripsSummary, aes(x=category, y=avgDuration, fill=category)) +
   annotate("text", label=labelText, colour = "black", x=2, y=900)
 
 #plot(dripsDist)
-
 
 hist(EnergyChangeRate)
 L <- (dripsDrain.df$EnergyChangeRate < 1000) 
@@ -114,6 +150,7 @@ sp <- ggplot(mySample, aes(x=DripsPercentage, y=EnergyChangeRate,
 #  scale_colour_manual(values=c("red", "blue"))+
   scale_fill_hue() +
   geom_point(size=3)+
+  theme(legend.position="none")+
   annotate("text", label=labelText, colour = "red", x=50.5, y=4000)+
   annotate("text", label="X", colour = "red", 
            x=cl$centers[1,1], 
@@ -146,6 +183,8 @@ wssplot(mySample)
 kSize=4
 cl <- kmeans(mySample, kSize)
 labelText <- paste("K=4 Mean", "(n=", nrow(mySample), ")", sep='')
+
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 sp <- ggplot(mySample, aes(x=DripsPercentage, y=EnergyChangeRate, 
                            #colour = c("darkred", "orange", "yellow", "black"))) + 
@@ -221,6 +260,7 @@ sp <- ggplot(dripsDrain.df, aes(x=DripsPercentage, y=EnergyChangeRate))
 sp + stat_bin2d(bins=50) +
   scale_fill_gradient(low="lightblue", high="red", limits=c(0,5000)) +
   geom_line(data=pred,colour = "red", size = 1) +
+  theme(legend.position="none")+
   annotate("text", label=labelText, colour = "red", x=50.5, y=3000)
 
 
