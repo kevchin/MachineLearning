@@ -7,7 +7,7 @@ library(hexbin)
 raw <- read.csv("d0_100.csv")
 raw[is.na(raw)] <- 0
 
-dripsDrain.df <- raw[,c('DripsPercentage', 'EnergyChangeRate')]
+dripsDrain.df <- raw[,c('DripsPercentage', 'EnergyChangeRate', 'Duration')]
 L <- (dripsDrain.df$EnergyChangeRate > 0) 
 dripsDrain.df <- dripsDrain.df[L,]
 
@@ -15,6 +15,60 @@ attach(dripsDrain.df)
 hist(DripsPercentage)
 L <- (dripsDrain.df$DripsPercentage > 90) 
 hist(dripsDrain.df[L,]$DripsPercentage, xlab="DRIPS Rates (%)", main="DRIPS Rates > 90%")
+
+allRow <- nrow(dripsDrain.df)
+L <- (dripsDrain.df$DripsPercentage < 1) 
+percentZero <- (nrow(dripsDrain.df[L,]) * 1.0) / allRow
+mw0 <- mean(dripsDrain.df[L,]$EnergyChangeRate)
+duration0 <- sum(dripsDrain.df[L,]$Duration)
+avg0Duration <- (duration0 *1.0) / (nrow(dripsDrain.df[L,]))
+
+L <- (dripsDrain.df$DripsPercentage > 0) &(dripsDrain.df$DripsPercentage < 95)
+percentMiddle <- (nrow(dripsDrain.df[L,]) *1.0 ) / allRow
+mwMid <- mean(dripsDrain.df[L,]$EnergyChangeRate)
+duration1 <- sum(dripsDrain.df[L,]$Duration)
+avg1Duration <- (duration1 *1.0) / (nrow(dripsDrain.df[L,]))
+                                                                    
+                                  
+L <- (dripsDrain.df$DripsPercentage > 94) 
+mw95 <- mean(dripsDrain.df[L,]$EnergyChangeRate)
+percent95up <- (nrow(dripsDrain.df[L,]) *1.0) / allRow
+duration2 <- sum(dripsDrain.df[L,]$Duration)
+avg2Duration <- (duration2 *1.0) / (nrow(dripsDrain.df[L,]))
+                                                                      
+avgDrainRates<- c(mw0, mwMid, mw95)
+dripsDist <- c(percentZero, percentMiddle, percent95up)
+durations <- c(duration0, duration1,duration2)
+avgDur <- c(avg0Duration, avg1Duration, avg2Duration)                        
+
+dripsSummary <- data.frame(category=c("0 Drips %", "1-94%", "95+%"), 
+                           drainRate=avgDrainRates, 
+                           percentage=dripsDist,
+                           duration=durations,
+                           avgDuration=avgDur)
+
+labelText <- paste("CS Session by DRIPS % Rate")
+ggplot(dripsSummary, aes(x=category, y=percentage, fill=category)) + 
+  geom_bar(stat="identity", fill=c("#CC0000", "#000099", "#009E73")) + 
+  geom_text(aes(label=round(percentage,2)), vjust=-0.2) +
+  annotate("text", label=labelText, colour = "black", x=2, y=0.6)
+
+
+labelText <- paste("CS Session Drain Rate by DRIPS Group")
+ggplot(dripsSummary, aes(x=category, y=drainRate, fill=category)) + 
+  geom_bar(stat="identity", fill=c("#CC0000", "#000099", "#009E73")) + 
+  geom_text(aes(label=round(drainRate,2)), vjust=-0.2) +
+  annotate("text", label=labelText, colour = "black", x=2, y=900)
+
+
+labelText <- paste("Avg Session Duration  by DRIPS Group")
+ggplot(dripsSummary, aes(x=category, y=avgDuration, fill=category)) + 
+  geom_bar(stat="identity", fill=c("#CC0000", "#000099", "#009E73")) + 
+  geom_text(aes(label=round(avgDuration,2)), vjust=-0.2) +
+  annotate("text", label=labelText, colour = "black", x=2, y=900)
+
+#plot(dripsDist)
+
 
 hist(EnergyChangeRate)
 L <- (dripsDrain.df$EnergyChangeRate < 1000) 
