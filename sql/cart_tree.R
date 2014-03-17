@@ -6,11 +6,11 @@ library(hexbin)
 
 raw <- read.csv("d0_100.csv")
 raw[is.na(raw)] <- 0
+L <- (raw$EnergyChangeRate > 0)
+raw <- raw[L,]
+
 
 dripsDrain.df <- raw[,c('DripsPercentage', 'EnergyChangeRate', 'Duration')]
-L <- (dripsDrain.df$EnergyChangeRate > 0)
-
-dripsDrain.df <- dripsDrain.df[L,]
 dripsDrain.df['DripsCategory'] <- '0% DRIPS'
 L <- (dripsDrain.df$DripsPercentage > 0) & (dripsDrain.df$DripsPercentage < 95)
 dripsDrain.df[L,]$DripsCategory <- '1-94% DRIPS'
@@ -268,10 +268,6 @@ sp + stat_bin2d(bins=50) +
 # removing uSession,  Duration
 offender <- raw[,-c(1,4)]
 
-# Remove the 0 ChangeRate
-L <- (offender$EnergyChangeRate > 0) 
-offender <- offender[L,]
-
 # Only Look at the 0 DRIPS
 L <- (offender$DripsPercentage == 0) 
 offender <- offender[L,]
@@ -307,6 +303,7 @@ offender_test <- offender[((nrow(offender)/2) + 1):nrow(offender), ]
 library(rpart)
 m.rpart <- rpart(EnergyChangeRate ~ ., data = offender_train)
 
+#m.rpart <- rpart(EnergyChangeRate ~ ., data = offender)
 # get basic information about the tree
 m.rpart
 
@@ -430,7 +427,7 @@ contour3d(newdat.dv, level=0, x=newdat.list$X1, y=newdat.list$X2, z=newdat.list$
 ### SVM
 library(e1071)
 
-dataset.df <- read.csv("zeroDripsClassify_HandTuned.csv")
+dataset.df <- read.csv("zeroDripsClassify_HandTuned3000.csv")
 index <- 1:nrow(dataset.df)
 
 # testindex is 1/3 of the sample
@@ -469,32 +466,26 @@ matchDiagPercentage <- classAgreement(tab)$diag
 # cost =10, gamma = 1, result = 93%
 matchDiagPercentage
 
-#---------------------------------
-
-
-
-
-rightAnswers <- read.csv("zeroDripsClassifyRightAnswers.csv")
-testSet <- shortNameOffender[-(1:nrow(rightAnswers)),]
-svm.model <- svm(Classify ~., data=rightAnswers, cost=10, gamma=1)
-svm.pred <- predict(svm.model, rightAnswers[,-1])
-table(pred=svm.pred, true=rightAnswers[,1])
-
-svm.pred <- predict(svm.model, testSet)
 
 df2 <- data.frame(summary(svm.pred))
 colnames(df2) <- c("Count")
 df3 <- data.frame(rownames(df2), df2$Count)
 colnames(df3) <- c("Offender", "Count")
-labelText <- paste("SVM Model of Root Cause Offenders\nZero DRIPS Sessions")
-ggplot(df3, aes(x=Offender, y=Count)) + geom_bar(stat = "bin")+
-  annotate("text", label=labelText, colour = "red", x=4, y=1000)
+df2 <- df3
 
-df4 <- data.frame(svm.pred)
-colnames(df4) <- c("Root")
-df4 <- data.frame(rownames(df4), df4$Root)
-colnames(df4) <- c("rowIndex", "Root")
-rIndex <- c(nrow(rightAnswers)+1:(nrow(df4)))
-df4$rowIndex <- rIndex
-predictions.output <- data.frame(df4$Root,testSet )
-write.table(predictions.output, file="zeroDripsPredictClassify.csv", sep=",", row.names=FALSE)
+L <- (df3$Count > 10)
+df3 <- df3[L,]
+labelText <- paste("SVM Model of Common Root Cause Offenders (count > 10)\nZero DRIPS Sessions (n=", sum(df3$Count), ")", sep="")
+maxY <- as.integer((max(df3$Count) * 1.2))
+ggplot(df3, aes(x=Offender, y=Count)) + geom_bar(stat = "identity")+
+  annotate("text", label=labelText, colour = "red", x=4, y=maxY)
+
+L <- (df2$Count <= 10) & (df2$Count > 1)
+df3 <- df2[L,]
+labelText <- paste("SVM Model of Rare Root Cause Offenders (count <= 10)\nZero DRIPS Sessions (n=", sum(df3$Count), ")", sep="")
+maxY <- as.integer(round((max(df3$Count) * 1.2),0))
+ggplot(df3, aes(x=Offender, y=Count)) + geom_bar(stat = "identity")+
+  annotate("text", label=labelText, colour = "red", x=4, y=maxY)
+
+
+#---------------------------------
