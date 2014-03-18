@@ -4,6 +4,7 @@ library(hexbin)
 
 #raw <- read.csv("cart_tree_input.csv")
 
+saveOut <- FALSE
 raw <- read.csv("d0_100.csv")
 raw[is.na(raw)] <- 0
 L <- (raw$EnergyChangeRate > 0)
@@ -35,14 +36,24 @@ ggplot(dripsDrain.df[L,], aes(x=EnergyChangeRate, colour=DripsCategory, fill=Dri
   geom_density(alpha=.1) +
   annotate("text", label=labelText, colour = "black", x=500, y=0.006)
 
+if (saveOut) ggsave(file="ggChart1.png", width=6, height=5)
+
 #ggplot(dripsDrain.df[L,], aes(x=EnergyChangeRate, fill=Category)) +
 #  geom_histogram(binwidth=.5, alpha=.5, position="identity")
 
 attach(dripsDrain.df)
 hist(DripsPercentage)
+if (saveOut) dev.copy(png,"myhist7.png", width=400, height=400)
+if (saveOut) dev.off()
+dev.set(2)
+  
 L <- (dripsDrain.df$DripsPercentage > 90) 
 hist(dripsDrain.df[L,]$DripsPercentage, xlab="DRIPS Rates (%)", main="DRIPS Rates > 90%")
 
+if (saveOut) dev.copy(png,"myhist8.png", width=400, height=400)
+if (saveOut) dev.off()
+#dev.set(1)
+  
 allRow <- nrow(dripsDrain.df)
 L <- (dripsDrain.df$DripsPercentage < 1) 
 percentZero <- (nrow(dripsDrain.df[L,]) * 1.0) / allRow
@@ -53,7 +64,7 @@ L <- (dripsDrain.df$EnergyChangeRate < 1000 ) & L
 ggplot(dripsDrain.df[L,], aes(x=EnergyChangeRate)) + 
   geom_histogram(binwidth=.5, colour="grey", fill="white") +
   geom_density(alpha=.2, fill="#FF6666")
-
+if (saveOut) ggsave(file="ggChart2.png", width=6, height=5)
 
 L <- (dripsDrain.df$DripsPercentage > 0) &(dripsDrain.df$DripsPercentage < 95)
 percentMiddle <- (nrow(dripsDrain.df[L,]) *1.0 ) / allRow
@@ -65,7 +76,7 @@ L <- (dripsDrain.df$EnergyChangeRate < 1000 ) & L
 ggplot(dripsDrain.df[L,], aes(x=EnergyChangeRate)) + 
   geom_histogram(aes(y=..density..),binwidth=.5, colour="grey", fill="white") +
   geom_density(alpha=.2, fill="#FF6666")
-
+if (saveOut) ggsave(file="ggChart3.png", width=6, height=5)
 
 L <- (dripsDrain.df$DripsPercentage > 94) 
 mw95 <- mean(dripsDrain.df[L,]$EnergyChangeRate)
@@ -89,38 +100,53 @@ ggplot(dripsSummary, aes(x=category, y=percentage, fill=category)) +
   geom_bar(stat="identity", fill=c("#CC0000", "#000099", "#009E73")) + 
   geom_text(aes(label=round(percentage,2)), vjust=-0.2) +
   annotate("text", label=labelText, colour = "black", x=2, y=0.6)
-
+if (saveOut) ggsave(file="ggChart4.png", width=6, height=5)
 
 labelText <- paste("CS Session Drain Rate by DRIPS Group")
 ggplot(dripsSummary, aes(x=category, y=drainRate, fill=category)) + 
   geom_bar(stat="identity", fill=c("#CC0000", "#000099", "#009E73")) + 
   geom_text(aes(label=round(drainRate,2)), vjust=-0.2) +
   annotate("text", label=labelText, colour = "black", x=2, y=900)
-
+if (saveOut) ggsave(file="ggChart5.png", width=6, height=5)
 
 labelText <- paste("Avg Session Duration  by DRIPS Group")
 ggplot(dripsSummary, aes(x=category, y=avgDuration, fill=category)) + 
   geom_bar(stat="identity", fill=c("#CC0000", "#000099", "#009E73")) + 
   geom_text(aes(label=round(avgDuration,2)), vjust=-0.2) +
   annotate("text", label=labelText, colour = "black", x=2, y=900)
+if (saveOut) ggsave(file="ggChart6.png", width=6, height=5)
 
 #plot(dripsDist)
 
 hist(EnergyChangeRate)
+if (saveOut) dev.copy(png,"myhist1.png", width=400, height=400)
+if (saveOut) dev.off()
+dev.set(2)
+#dev.set(1)
+
 L <- (dripsDrain.df$EnergyChangeRate < 1000) 
 hist(dripsDrain.df[L,]$EnergyChangeRate, xlab="Drain Rates (mwh)", main="Drain Rates < 1Watt")
+if (saveOut) dev.copy(png,"myhist2.png", width=400, height=400)
+if (saveOut) dev.off()
+dev.set(2)
+#dev.set(1)
+
 plot(DripsPercentage, EnergyChangeRate, main=paste("CS Sessions (n =", nrow(dripsDrain.df), ")", sep=''))
+if (saveOut) dev.copy(png,"myplot1.png", width=400, height=400)
+if (saveOut) dev.off()
+dev.set(2)
+#dev.set(1)
 
 # R sample to take smaller dataset
 #mySample <- dripsDrain.df[sample(1:nrow(dripsDrain.df), 500, replace=FALSE),]
 
 # remove the top and bottom 10% DRIPS
 L <- (dripsDrain.df$DripsPercentage > 4) & (dripsDrain.df$DripsPercentage < 95)  
-mySample <- dripsDrain.df[L,]
+mySample <- dripsDrain.df[L,-(3:4)]
 
 # K-means
 
-#library(NbClust)
+#library(stats)
 #set.seed(1234)
 #nc <- NbClust(mySample, min.nc=2, max.nc=15, method="kmeans")
 #table(nc$Best.n[1,])
@@ -135,7 +161,7 @@ sp <- ggplot(mySample, aes(x=DripsPercentage, y=EnergyChangeRate))
 sp + stat_binhex() +
   scale_fill_gradient(low="lightblue", high="red", limits=c(0,5000))+
   annotate("text", label=labelText, colour = "red", x=50.5, y=4000)
-
+if (saveOut) ggsave(file="ggChart7.png", width=6, height=5)
 
 
 kSize=1
@@ -156,6 +182,7 @@ sp <- ggplot(mySample, aes(x=DripsPercentage, y=EnergyChangeRate,
            x=cl$centers[1,1], 
            y=cl$centers[1,2])
 sp
+if (saveOut) ggsave(file="ggChart8.png", width=6, height=5)
 
 labelText <- paste("Heat Map w/ K Means (k=1): DRIPS[5%-95%] \nmean=(85,256)")
 sp <- ggplot(mySample, aes(x=DripsPercentage, y=EnergyChangeRate))
@@ -166,7 +193,7 @@ sp + stat_binhex() +
            x=cl$centers[1,1], 
            y=cl$centers[1,2])
 
-
+if (saveOut) ggsave(file="ggChart9.png", width=6, height=5)
 
 wssplot <- function(data, nc=15, seed=1234){
   wss <- (nrow(data)-1)*sum(apply(data,2,var))
@@ -211,6 +238,8 @@ annotate("text", label=paste("X", " ", "(n = ", cl$size[4],")"),
          y=cl$centers[4,2])
 
 sp
+
+if (saveOut) ggsave(file="ggChart10.png", width=6, height=5)
 
 #
 # Tells me the optimal number of clusters given this dataset
@@ -263,6 +292,7 @@ sp + stat_bin2d(bins=50) +
   theme(legend.position="none")+
   annotate("text", label=labelText, colour = "red", x=50.5, y=3000)
 
+if (saveOut) ggsave(file="ggChart11.png", width=6, height=5)
 
 # Remove non-meaningful factors
 # removing uSession,  Duration
@@ -292,6 +322,9 @@ str(offender)
 
 # the distribution of EnergyChangeRate
 hist(offender$EnergyChangeRate,xlab="Drain Rates (mw)", main=paste("Zero DRIPS ", "(n=", nrow(offender),")", sep=''))
+if (saveOut) dev.copy(png,"myhist3.png", width=400, height=400)
+if (saveOut) dev.off()
+dev.set(2)
 
 # summary statistics of the offender data
 summary(offender)
@@ -317,6 +350,10 @@ library(rpart.plot)
 rpart.plot(m.rpart, digits = 4, fallen.leaves = TRUE, 
            main="Zero DRIPS: Drain Rate v. Offender Active %",
            type = 2, extra = 1)
+
+if (saveOut) dev.copy(png,"myrpart1.png", width=400, height=400)
+if (saveOut) dev.off()
+dev.set(2)
 
 #rpart.plot(m.rpart, digits = 4, fallen.leaves = TRUE, type = 3, extra = 1)
 #rpart.plot(m.rpart, digits = 4, fallen.leaves = TRUE, type = 4, extra = 1)
@@ -372,6 +409,9 @@ corrgram(shortNameOffender, order=NULL, lower.panel=panel.shade,
          upper.panel=NULL, text.panel=panel.txt,
          main="Zero DRIPS Offender Correlation")
         
+if (saveOut) dev.copy(png,"mycorr1.png", width=400, height=400)
+if (saveOut) dev.off()
+dev.set(2)
 
 # Find out worse Offenders during Zero DRIPS
 gt10Count <- apply(shortNameOffender, MARGIN=2, function(x) { sum(x >10)})
@@ -382,8 +422,10 @@ colnames(df3) <- c("Offender", "Count")
 labelText <- paste("Zero Drips: Offenders > 10% Busy")
 ggplot(df3, aes(x=Offender, y=Count)) + geom_bar(stat = "bin")+
   annotate("text", label=labelText, colour = "red", x=4, y=1500)
-  
-write.table(shortNameOffender, file="zeroDripsClassify.csv", sep=",", row.names=FALSE)
+
+if (saveOut) ggsave(file="ggChart12.png", width=6, height=5)
+
+#write.table(shortNameOffender, file="zeroDripsClassify.csv", sep=",", row.names=FALSE)
 
 #### 
 ###--------------
@@ -456,6 +498,7 @@ ggplot(f2, aes(x=Offender, y=Count)) +
   annotate("text", label=labelText, colour = "black", x=10, y=1500) +
   coord_flip()
 
+if (saveOut) ggsave(file="ggChart13.png", width=6, height=5)
 
 # Get a test and training set
 testset <- offenders.df[testindex,]
@@ -516,6 +559,7 @@ ggplot(df3, aes(x=Offender, y=percentage)) + geom_bar(stat = "identity", fill=my
   annotate("text", label=labelText, colour = "black", x=2, y=12) +
   coord_flip()
 
+if (saveOut) ggsave(file="ggChart14.png", width=6, height=5)
 
 
 ###-----------
@@ -535,5 +579,6 @@ maxY <- as.integer(round((max(df3$Count) * 1.2),0))
 ggplot(df3, aes(x=Offender, y=Count)) + geom_bar(stat = "identity")+
   annotate("text", label=labelText, colour = "red", x=3, y=7) + coord_flip()
 
+if (saveOut) ggsave(file="ggChart15.png", width=6, height=5)
 
 #---------------------------------
