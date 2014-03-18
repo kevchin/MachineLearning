@@ -375,7 +375,7 @@ corrgram(shortNameOffender, order=NULL, lower.panel=panel.shade,
 
 # Find out worse Offenders during Zero DRIPS
 gt10Count <- apply(shortNameOffender, MARGIN=2, function(x) { sum(x >10)})
-df2 <- data.fram(gt10Count)
+df2 <- data.frame(gt10Count)
 df3 <- data.frame(rownames(df2), df2$gt10Count)
 colnames(df3) <- c("Offender", "Count")
 
@@ -438,6 +438,25 @@ testindex <- sample(index, trunc(length(index)/3))
 dataColumns <-  !grepl("Count", colnames(dataset.df))
 offenders.df <- dataset.df[,dataColumns]
 
+gt10Count <- apply(offenders.df[,-1], MARGIN=2, function(x) { sum(x >10)})
+f2 <- data.frame(offender=rownames(as.data.frame(gt10Count)), 
+                 gt10Count)
+colnames(f2) <- c("Offender", "Count")
+attach(f2)
+f2 <- f2[order(Count),]
+detach(f2)
+
+f2$Offender <- factor(f2$Offender, levels=f2[order(f2$Count),"Offender"])
+my.color <- "#CC6600"
+
+labelText <- paste("Count of Common Root Cause Offenders (count > 10)\nZero DRIPS Sessions (n=", sum(f2$Count), ")", sep="")
+
+ggplot(f2, aes(x=Offender, y=Count)) +
+  geom_bar(stat = "identity", fill=my.color)+
+  annotate("text", label=labelText, colour = "black", x=10, y=1500) +
+  coord_flip()
+
+
 # Get a test and training set
 testset <- offenders.df[testindex,]
 trainset <- offenders.df[-testindex,]
@@ -475,17 +494,46 @@ df2 <- df3
 
 L <- (df3$Count > 10)
 df3 <- df3[L,]
+df3["percentage"] <- (df3$Count *1.0)/ nrow(df3)
+#df3[,$percentage] <- (df3$Count *1.0)/ nrow(df3)
+
+# Sort
+attach(df3)
+df3 <- df3[order(Count),]
+detach(df3)
+#df3$Count <- factor(df3$Count, levels=df3[order(df3$percentage), "Count"])
+df3$Offender <- factor(df3$Offender, levels=df3[order(df3$percentage), "Offender"])
+
+
 labelText <- paste("SVM Model of Common Root Cause Offenders (count > 10)\nZero DRIPS Sessions (n=", sum(df3$Count), ")", sep="")
-maxY <- as.integer((max(df3$Count) * 1.2))
-ggplot(df3, aes(x=Offender, y=Count)) + geom_bar(stat = "identity")+
-  annotate("text", label=labelText, colour = "red", x=4, y=maxY)
+maxY <- as.integer((max(df3$percentage) * 1.2))
+maxX <- nrow(df3)+3
+
+#my.color <- "#CC0000" # Orange , use mspaint dropper | custom | convert to HEX
+my.color <- "#CC6600"
+
+ggplot(df3, aes(x=Offender, y=percentage)) + geom_bar(stat = "identity", fill=my.color)+
+  annotate("text", label=labelText, colour = "black", x=2, y=12) +
+  coord_flip()
+
+
+
+###-----------
 
 L <- (df2$Count <= 10) & (df2$Count > 1)
 df3 <- df2[L,]
+df3["percentage"] <- as.factor((df3$percentage *1.0)/ nrow(df3))
+attach(df3)
+df3 <- df3[order(Count),]
+detach(df3)
+#df3$Count <- factor(df3$Count, levels=df3[order(df3$percentage), "Count"])
+df3$Offender <- factor(df3$Offender, levels=df3[order(df3$percentage), "Offender"])
+
+
 labelText <- paste("SVM Model of Rare Root Cause Offenders (count <= 10)\nZero DRIPS Sessions (n=", sum(df3$Count), ")", sep="")
 maxY <- as.integer(round((max(df3$Count) * 1.2),0))
 ggplot(df3, aes(x=Offender, y=Count)) + geom_bar(stat = "identity")+
-  annotate("text", label=labelText, colour = "red", x=4, y=maxY)
+  annotate("text", label=labelText, colour = "red", x=3, y=7) + coord_flip()
 
 
 #---------------------------------
