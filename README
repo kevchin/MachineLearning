@@ -24,3 +24,4 @@ git checkout master
 git merge bug456
 git log -- foo.txt
 git branch -d bug456
+#github client for macos
